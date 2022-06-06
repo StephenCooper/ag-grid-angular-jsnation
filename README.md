@@ -1,2 +1,7 @@
-# ag-grid-angular-jsnation
-Getting Started with AG Grid in Angular
+# JS Nation - AG Grid Angular Workshop
+
+## Please Click on the Branch Dropdown Above 
+
+Each branch is a different section of the workshop 
+
+[Data File](https://www.ag-grid.com/example-assets/olympic-winners.json)
