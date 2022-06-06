@@ -39,7 +39,7 @@ export class UnderComponent implements ICellRendererAngularComp {
   label?: string;
 
   agInit(params: ICellRendererParams & IMyCellParams): void {
-    this.value = params.data.age;
+    this.value = params.data?.age;
     this.label = params.label || 'Default';
   }
   refresh(params: ICellRendererParams): boolean {
