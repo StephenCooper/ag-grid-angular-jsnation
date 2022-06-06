@@ -1,160 +1,54 @@
 # JS Nation - AG Grid Angular Workshop
 
-## Grid Properties
+## Cell Styling
 
-### Load Data from an external Source
-
-First, download [row data](https://www.ag-grid.com/example-assets/olympic-winners.json) and save it under assets.
-
-Add `HttpClientModule` to your `AppModule` so that we can use the http client.
+Add cell class to columns.
 
 ```ts
-import { NgModule } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http'
-import { BrowserModule } from '@angular/platform-browser';
-import { AgGridModule } from 'ag-grid-angular';
-import { AppComponent } from './app.component';
-
-@NgModule({
-  declarations: [
-    AppComponent
-  ],
-  imports: [
-    BrowserModule,
-    HttpClientModule,
-    AgGridModule
-  ],
-  providers: [],
-  bootstrap: [AppComponent]
-})
-export class AppModule { }
+    { field: 'gold', cellClass: 'medal-gold' },
+    { field: 'silver', cellClass: 'medal-silver' },
+    { field: 'bronze', cellClass: 'medal-bronze' },
 ```
 
-Now update our row data to be an Observable that loads data from the http client.
+Styles in styles.scss.
 
-```ts
-import { HttpClient } from '@angular/common/http';
-import { OnInit } from '@angular/core';
-import { Component } from '@angular/core';
-import { ColDef } from 'ag-grid-community';
-import { Observable } from 'rxjs';
+```css
+.medal-gold {
+    background-color: gold;
+}
 
-@Component({
-  selector: 'app-root',
-  template: `
-    <ag-grid-angular
-    style="width: 100%; height: 100%"
-    class="ag-theme-alpine"
-      [rowData]="rowData$ | async"
-      [columnDefs]="columnDefs"
-    >
-    </ag-grid-angular>
-  `,
-  styles: []
-})
-export class AppComponent implements OnInit {
-  public rowData$!: Observable<any[]>;
-  public columnDefs: ColDef[] = [
-    { field: 'athlete' },
-    { field: 'age' },
-    { field: 'country' },
-    { field: 'year' },
-    { field: 'date' },
-    { field: 'sport' },
-    { field: 'gold' },
-    { field: 'silver' },
-    { field: 'bronze' },
-    { field: 'total' }
-  ];
+.medal-silver {
+    background-color: silver;
+}
 
-  constructor(private http: HttpClient) {}
-
-  ngOnInit(): void {
-    this.rowData$ = this.http.get<any[]>('../assets/row-data.json');
-  }
+.medal-bronze {
+    background-color: orange;
 }
 ```
 
-### Add Default Column Properties
+If you want the styles in the app.component.ts file then you will need to change the components encapsulation property to `ViewEncapsulation.None`.
 
-We can add features to every column via the `defaultColDef` property. Let's enable sorting and filtering for every column.
+### Conditional Cell Styling 
 
-```ts
-  defaultColDef: ColDef = {
-    sortable: true,
-    filter: true
-  }
-```
-
-```html
-    <ag-grid-angular
-    style="width: 100%; height: 100%"
-    class="ag-theme-alpine"
-      [rowData]="rowData$ | async"
-      [columnDefs]="columnDefs"
-      [defaultColDef]="defaultColDef"
-    >
-    </ag-grid-angular>
-```
-
-### Configure Grid Properties
-
-Now lets animate the rows on sorting and add row selection.
-
-```html
-    <ag-grid-angular
-    style="width: 100%; height: 100%"
-    class="ag-theme-alpine"
-      [rowData]="rowData$ | async"
-      [columnDefs]="columnDefs"
-      [defaultColDef]="defaultColDef"
-      [animateRows]="true"
-      [rowSelection]="'multiple'"
-    >
-    </ag-grid-angular>
-```
-
-### Add Grid Event Handler
-
-Add an `onCellClicked` event handler to the component output `(cellClicked)`
-
-```html
-    <ag-grid-angular
-    style="width: 100%; height: 100%"
-    class="ag-theme-alpine"
-      [rowData]="rowData$ | async"
-      [columnDefs]="columnDefs"
-      [defaultColDef]="defaultColDef"
-      [animateRows]="true"
-      [rowSelection]="'multiple'"
-      (cellClicked)="onCellClicked($event)"
-    >
-    </ag-grid-angular>
-```
+Now only style the cells where medals have been won. There are a number of ways to achieve this with either making `cellClass` a function or using the `cellClassRules` property.
 
 ```ts
-  onCellClicked(e: CellClickedEvent): void {
-    console.log('cellClicked', e);
-  }
+{
+      field: 'gold',
+      cellClass: (params: CellClassParams) => params.data.gold > 0 ? 'medal-gold' : null
+    },
+    {
+      field: 'silver',
+      cellClassRules: {
+        'medal-silver': (params: CellClassParams) => params.data.silver > 0
+      }
+    },
+    {
+      field: 'bronze',
+      // Short hand format where x gives the column value
+      cellClassRules: {
+        'medal-bronze': 'x > 0'
+      }
+    },
 ```
-
-### Use GridApi to control grid
-
-Get a reference to the GridApi via the `ViewChild` attribute.
-
-```ts
- @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
- ```
-
- Use the api to add a button that can clear the cell selection.
-
- ```ts
- clearSelection(): void {
-   this.agGrid.api.deselectAll();
- }
- ```
-
- ```html
-<button (click)="clearSelection()">Clear Selection</button>
-<ag-grid-angular
- ```
+More styling details in the [documentation](https://ag-grid.com/angular-data-grid/cell-styles/#cell-style-cell-class--cell-class-rules-params).
