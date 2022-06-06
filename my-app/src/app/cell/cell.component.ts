@@ -17,7 +17,7 @@ export class CellComponent implements ICellRendererAngularComp {
   label?: string;
 
   agInit(params: ICellRendererParams & IMyCellParams): void {
-    this.value = params.data.age;
+    this.value = params.getValue ? params.getValue() : undefined;
     this.label = params.label || 'Default';
   }
   refresh(params: ICellRendererParams & IMyCellParams): boolean {
