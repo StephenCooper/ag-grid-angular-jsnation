@@ -1,26 +1,17 @@
 # JS Nation - AG Grid Angular Workshop
 
-## Getting Started with AG Grid
+## Grid Properties
 
- ```bash
- ng new my-app --style scss --routing false --inline-style --inline-template 
+### Load Data from an external Source
 
- cd my-app
- npm install --save ag-grid-community ag-grid-angular
- npm run start
- ```
+First, download [row data](https://www.ag-grid.com/example-assets/olympic-winners.json) and save it under assets.
 
- If everything goes well, `npm run start` has started the web server and conveniently opened a browser
- pointing to [localhost:4200](http://localhost:4200).
- 
- ### Add AgGridModule
+Add `HttpClientModule` to your `AppModule` so that we can use the http client.
 
- Copy the content below into the file `app.modules.ts` to add the `AgGridModule`.
-
-```js
+```ts
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http'
+import { BrowserModule } from '@angular/platform-browser';
 import { AgGridModule } from 'ag-grid-angular';
 import { AppComponent } from './app.component';
 
@@ -30,22 +21,23 @@ import { AppComponent } from './app.component';
   ],
   imports: [
     BrowserModule,
+    HttpClientModule,
     AgGridModule
   ],
   providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
-
 ```
 
-### Setup Component with AG Grid
+Now update our row data to be an Observable that loads data from the http client.
 
-Setup some row data and matching column definitions. Pass these to the AG Grid component.
-
-```js
+```ts
+import { HttpClient } from '@angular/common/http';
+import { OnInit } from '@angular/core';
 import { Component } from '@angular/core';
 import { ColDef } from 'ag-grid-community';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -53,19 +45,15 @@ import { ColDef } from 'ag-grid-community';
     <ag-grid-angular
     style="width: 100%; height: 100%"
     class="ag-theme-alpine"
-      [rowData]="rowData"
+      [rowData]="rowData$ | async"
       [columnDefs]="columnDefs"
     >
     </ag-grid-angular>
   `,
   styles: []
 })
-export class AppComponent {
-  public rowData = [
-    { "athlete": "Michael Phelps", "age": 23, "country": "United States", "year": 2008, "date": "24/08/2008", "sport": "Swimming", "gold": 8, "silver": 0, "bronze": 0, "total": 8 },
-    { "athlete": "Libby Lenton-Trickett", "age": 23, "country": "Australia", "year": 2008, "date": "24/08/2008", "sport": "Swimming", "gold": 2, "silver": 1, "bronze": 1, "total": 4 },
-    { "athlete": "Shawn Johnson", "age": 16, "country": "United States", "year": 2008, "date": "24/08/2008", "sport": "Gymnastics", "gold": 1, "silver": 3, "bronze": 0, "total": 4 }
-  ];
+export class AppComponent implements OnInit {
+  public rowData$!: Observable<any[]>;
   public columnDefs: ColDef[] = [
     { field: 'athlete' },
     { field: 'age' },
@@ -78,27 +66,95 @@ export class AppComponent {
     { field: 'bronze' },
     { field: 'total' }
   ];
-}
 
-```
-### Setup the Styles and Grid Theme
+  constructor(private http: HttpClient) {}
 
-Copy the content below into the file `styles.scss`:
-
-```css
-@import 'ag-grid-community/dist/styles/ag-grid.css'; // Core grid CSS, always needed
-@import 'ag-grid-community/dist/styles/ag-theme-alpine.css'; // Optional theme CSS
-
-html, body {
-    height: 100%;
-    width: 100%;
-    padding: 5px;
-    box-sizing: border-box;
-    -webkit-overflow-scrolling: touch;
+  ngOnInit(): void {
+    this.rowData$ = this.http.get<any[]>('../assets/row-data.json');
+  }
 }
 ```
 
- If everything is correct, you should see a simple grid that looks like this:<br/><br/>
- ![AG Grid in its simplest form](grid.png)
+### Add Default Column Properties
 
+We can add features to every column via the `defaultColDef` property. Let's enable sorting and filtering for every column.
 
+```ts
+  defaultColDef: ColDef = {
+    sortable: true,
+    filter: true
+  }
+```
+
+```html
+    <ag-grid-angular
+    style="width: 100%; height: 100%"
+    class="ag-theme-alpine"
+      [rowData]="rowData$ | async"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="defaultColDef"
+    >
+    </ag-grid-angular>
+```
+
+### Configure Grid Properties
+
+Now lets animate the rows on sorting and add row selection.
+
+```html
+    <ag-grid-angular
+    style="width: 100%; height: 100%"
+    class="ag-theme-alpine"
+      [rowData]="rowData$ | async"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="defaultColDef"
+      [animateRows]="true"
+      [rowSelection]="'multiple'"
+    >
+    </ag-grid-angular>
+```
+
+### Add Grid Event Handler
+
+Add an `onCellClicked` event handler to the component output `(cellClicked)`
+
+```html
+    <ag-grid-angular
+    style="width: 100%; height: 100%"
+    class="ag-theme-alpine"
+      [rowData]="rowData$ | async"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="defaultColDef"
+      [animateRows]="true"
+      [rowSelection]="'multiple'"
+      (cellClicked)="onCellClicked($event)"
+    >
+    </ag-grid-angular>
+```
+
+```ts
+  onCellClicked(e: CellClickedEvent): void {
+    console.log('cellClicked', e);
+  }
+```
+
+### Use GridApi to control grid
+
+Get a reference to the GridApi via the `ViewChild` attribute.
+
+```ts
+ @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
+ ```
+
+ Use the api to add a button that can clear the cell selection.
+
+ ```ts
+ clearSelection(): void {
+   this.agGrid.api.deselectAll();
+ }
+ ```
+
+ ```html
+<button (click)="clearSelection()">Clear Selection</button>
+<ag-grid-angular
+ ```
