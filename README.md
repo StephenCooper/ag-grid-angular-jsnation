@@ -1,245 +1,156 @@
 # JS Nation - AG Grid Angular Workshop
 
-## Custom Cell Renderers
+## Filtering
 
-Use our own custom Angular components to display values in our cells. 
+The community version of AG Grid comes with the following built in filters.
+ - Text Filter (Default) `agTextColumnFilter`
+ - Number Filter `agNumberColumnFilter`
+ - Date Filter `agDateColumnFilter`
 
-Generate the component with cli.
+ Add these to the relevant columns providing a custom comparator for the Date filter to correctly filter on our string representation of the date.
 
-```bash
-ng g c cell --inline-style --inline-template
+  ```ts
+{ field: 'athlete', filter: 'agTextColumnFilter' },
+...
+{
+    field: 'gold',
+    filter: 'agNumberColumnFilter'
+},
+...
+{
+    field: 'date',
+    filter: 'agDateColumnFilter',
+    filterParams: {
+    comparator: (dateFromFilter: Date, cellValue: string) => {
+        const dateAsString = cellValue;
+        if (dateAsString == null) return -1
+        const dateParts = dateAsString.split('/');
+        const cellDate = new Date(
+        Number(dateParts[2]),
+        Number(dateParts[1]) - 1,
+        Number(dateParts[0])
+        );
+
+        if (dateFromFilter.getTime() === cellDate.getTime()) {
+        return 0
+        }
+
+        if (cellDate < dateFromFilter) {
+        return -1
+        }
+
+        if (cellDate > dateFromFilter) {
+        return 1
+        }
+        return undefined;
+    }
+    }
+},
 ```
 
-Make sure to correctly implement the `ICellRendererAngularComp` interface.
+### Enabling Floating Filters
+
+Floating filters can be configured to appear in the header and support quicker filtering without needing to open up the filter menu.
+
+Can enable for all columns via the `defaultColDef`:
+```ts
+  defaultColDef: ColDef = {
+    sortable: true,
+    filter: true,
+    floatingFilter: true
+  }
+```
+
+## Custom Filter Component
+
+Let's add a custom filter that enables a toggle for those over / under 25. First create a new component.
+
+```bash
+ng g c age-filter --inline-style --inline-template
+```
+
+Then implement the `IFilterAngularComp` interface.
 
 ```ts
 import { Component } from '@angular/core';
-import { ICellRendererAngularComp } from 'ag-grid-angular';
-import { ICellRendererParams } from 'ag-grid-community';
+import { IFilterAngularComp } from 'ag-grid-angular';
+import { IDoesFilterPassParams, AgPromise, IFilterParams } from 'ag-grid-community';
 
 @Component({
-  selector: 'app-cell',
+  selector: 'app-age-filter',
   template: `
-      cell works!
-  `
+  <div>
+    <label>
+        <input type="radio" name="age" checked (click)="onFilterChanged(undefined)" />
+        All
+    </label>
+    <label>
+        <input type="radio" name="age" (click)="onFilterChanged(false)" />
+        Under
+    </label>
+    <label>
+        <input type="radio" name="age" (click)="onFilterChanged(true)" />
+        Over
+    </label>
+</div>
+  `,
+  styles: [`
+    div { padding: 10px; height: 30px }
+    label { font-size: large }
+  `]
 })
-export class CellComponent implements ICellRendererAngularComp {
+export class AgeFilterComponent implements IFilterAngularComp {
+  isOverLimit: boolean | undefined;
+  params!: IFilterParams;
 
-  agInit(params: ICellRendererParams): void {
+  agInit(params: IFilterParams): void {
+    this.params = params;
   }
-  refresh(params: ICellRendererParams): boolean {
-    return false;
+  isFilterActive(): boolean {
+    return this.isOverLimit === true || this.isOverLimit === false;
+  }
+  doesFilterPass(params: IDoesFilterPassParams): boolean {
+    if (this.isOverLimit) {
+      return params.data.age >= 25;
+    } else if (this.isOverLimit === false) {
+      return params.data.age < 25;
+    }
+
+    return true;
+  }
+  getModel() {
+    return { isOverLimit: this.isOverLimit }
+  }
+  setModel(model: any): void | AgPromise<void> {
+    this.isOverLimit = !!model.isOverLimit;
+  }
+  onFilterChanged(value: boolean | undefined) {
+    this.isOverLimit = value;
+    // Inform AG Grid the filter has changed
+    this.params.filterChangedCallback()
+  }
+
+  // Readonly display for floating filter if present
+  getModelAsString() {
+    if (this.isOverLimit) {
+      return 'Over 25'
+    }
+    if (this.isOverLimit === false) {
+      return 'Under 25'
+    }
+    return ''
   }
 }
 
 ```
 
-To use the component in the age column add it to the column definition
+Then pass this to the age column for it to be used.
 
 ```ts
-{ field: 'age', cellRenderer: CellComponent },
-```
-
-Should now see template component used in age column.
-
-![Cell Renderer](./images/cell.png)
-
-### Implement Component
-
-Now provided an implementation to your `CellComponent` as desired. You can use any Angular feature, this is just a standard Angular component. For example you can take advantage of Dependency Injection to provide services to the component.
-
-```ts
-@Component({
-  selector: 'app-cell',
-  template: `
-      Age: {{value}}
-  `
-})
-export class CellComponent implements ICellRendererAngularComp {
-  value!: number;
-
-  agInit(params: ICellRendererParams): void {
-    this.value = params.data.age; 
-  }
-  refresh(params: ICellRendererParams): boolean {
-    return false;
-  }
-}
-```
-
-### Configure Component with parameters.
-
-What if we wanted to re-use this component across multiple columns and pass in the label based on the column that it is being used in. To do this you use `cellRendererParams`.
-
-```ts
-{
-      field: 'age',
-      cellRenderer: CellComponent,
-      cellRendererParams: {
-        label: 'Age'
-      }
-    },
     {
-      field: 'country',
-      cellRenderer: CellComponent,
-      cellRendererParams: {
-        label: 'Country'
-      }
-    },
-```
-
-Then update the component params type to also accept your custom params and use them in the component.
-
-```ts
-export interface IMyCellParams {
-  label?: string;
-}
-
-@Component({
-  selector: 'app-cell',
-  template: `
-      {{label}} : {{value}}
-  `
-})
-export class CellComponent implements ICellRendererAngularComp {
-  value!: number;
-  label?: string;
-
-  agInit(params: ICellRendererParams & IMyCellParams): void {
-    this.value = params.data.age;
-    this.label = params.label || 'Default';
-  }
-  refresh(params: ICellRendererParams & IMyCellParams): boolean {
-    return false;
-  }
-}
-```
-
-![Cell Renderer](./images/cell-params.png)
-
-### Dynamically Select Cell Renderer Component
-
-Now let's dynamically pick a cell renderer based on the rows values.
-
-Create two cell renderers, `OverComponent` and `UnderComponent`, and switch between them based on the age column value.
-
-```ts
-
-@Component({
-  selector: 'app-under',
-  template: `
-       {{label}} {{value}}
-  `,
-  styles: [`
-  :host{color: red}
-  `]
-})
-export class UnderComponent implements ICellRendererAngularComp {
-  value!: number;
-  label?: string;
-
-  agInit(params: ICellRendererParams & IMyCellParams): void {
-    this.value = params.data.age;
-    this.label = params.label || 'Default';
-  }
-  refresh(params: ICellRendererParams): boolean {
-    return false;
-  }
-}
-@Component({
-  selector: 'app-over',
-  template: `
-       {{label}}
-  `,
-  styles: [`
-  :host{color: green}
-  `]
-})
-export class OverComponent implements ICellRendererAngularComp {
-  label?: string;
-
-  agInit(params: ICellRendererParams & IMyCellParams): void {
-    this.label = params.label || 'Default';
-  }
-  refresh(params: ICellRendererParams): boolean {
-    return false;
-  }
-}
-```
-
-Remember to add them to your Module declaration or make them standalone components (v14).
-
-```ts
-@NgModule({
-  declarations: [
-    AppComponent,
-    CellComponent,
-    UnderComponent,
-  ],
-})
-```
-
-Then use the `cellRendererSelector` property to dynamically pick which one to use.
-
-```ts
-{
       field: 'age',
-      cellRendererSelector: (params: ICellRendererParams) => {
-        if (params.data.age >= 25) {
-          return {
-            component: OverComponent,
-            params: {
-              label: 'Over 25'
-            }
-          }
-        } else {
-          return {
-            component: UnderComponent,
-            params: {
-              label: 'Under 25:'
-            }
-          }
-        }
-      }
-    },
+      filter: AgeFilterComponent,
+    }
 ```
 
-### Keep Column Definitions as valid JSON 
-
-You can also register components to a string value to enable you to parse your column definitions as JSON.
-
-```ts
-  public components = {
-    under: UnderComponent,
-    over: OverComponent
-  }
-  
-```
-```html
-    <ag-grid-angular
-      [components]="components"
-```
-Then use the string property instead of the actual component class. 
-```ts
-cellRendererSelector: (params: ICellRendererParams) => {
-        if (params.data.age >= 25) {
-          return {
-            component: 'over',
-            params: {
-              label: 'Over 25'
-            }
-          }
-        } else {
-          return {
-            component: 'under',
-            params: {
-              label: 'Under 25: '
-            }
-          }
-        }
-      }
-```
-
-More details under [Cell Renderers](https://ag-grid.com/angular-data-grid/component-cell-renderer/)
-
-More general component information available [here](https://ag-grid.com/angular-data-grid/components/)
+As an extension now make the value of 25 configurable via `filterParams`.
