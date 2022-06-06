@@ -2,9 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { OnInit, ViewChild } from '@angular/core';
 import { Component } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
-import { CellClassParams } from 'ag-grid-community';
+import { CellClassParams, ICellRendererParams } from 'ag-grid-community';
 import { CellClickedEvent, ColDef } from 'ag-grid-community';
 import { Observable } from 'rxjs';
+import { CellComponent, OverComponent, UnderComponent } from './cell/cell.component';
 
 @Component({
   selector: 'app-root',
@@ -26,10 +27,36 @@ import { Observable } from 'rxjs';
 })
 export class AppComponent implements OnInit {
   public rowData$!: Observable<any[]>;
+
   public columnDefs: ColDef[] = [
     { field: 'athlete' },
-    { field: 'age' },
-    { field: 'country' },
+    {
+      field: 'age',
+      cellRendererSelector: (params: ICellRendererParams) => {
+        if (params.data.age >= 25) {
+          return {
+            component: OverComponent,
+            params: {
+              label: 'Over 25'
+            }
+          }
+        } else {
+          return {
+            component: UnderComponent,
+            params: {
+              label: 'Under 25: '
+            }
+          }
+        }
+      }
+    },
+    {
+      field: 'country',
+      cellRenderer: CellComponent,
+      cellRendererParams: {
+        label: 'Country'
+      }
+    },
     { field: 'year' },
     { field: 'date' },
     { field: 'sport' },
