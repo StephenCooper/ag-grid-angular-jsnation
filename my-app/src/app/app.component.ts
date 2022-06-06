@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { OnInit, ViewChild } from '@angular/core';
 import { Component } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
+import { CellClassParams } from 'ag-grid-community';
 import { CellClickedEvent, ColDef } from 'ag-grid-community';
 import { Observable } from 'rxjs';
 
@@ -32,9 +33,22 @@ export class AppComponent implements OnInit {
     { field: 'year' },
     { field: 'date' },
     { field: 'sport' },
-    { field: 'gold' },
-    { field: 'silver' },
-    { field: 'bronze' },
+    {
+      field: 'gold',
+      cellClass: (params: CellClassParams) => params.data.gold > 0 ? 'medal-gold' : null
+    },
+    {
+      field: 'silver',
+      cellClassRules: {
+        'medal-silver': (params: CellClassParams) => params.data.silver > 0
+      }
+    },
+    {
+      field: 'bronze',
+      cellClassRules: {
+        'medal-bronze': 'x > 0'
+      }
+    },
     { field: 'total' }
   ];
 
