@@ -5,6 +5,7 @@ import { AgGridAngular } from 'ag-grid-angular';
 import { CellClassParams, ICellRendererParams } from 'ag-grid-community';
 import { CellClickedEvent, ColDef } from 'ag-grid-community';
 import { Observable } from 'rxjs';
+import { AgeFilterComponent } from './age-filter/age-filter.component';
 import { CellComponent, OverComponent, UnderComponent } from './cell/cell.component';
 
 @Component({
@@ -29,9 +30,10 @@ export class AppComponent implements OnInit {
   public rowData$!: Observable<any[]>;
 
   public columnDefs: ColDef[] = [
-    { field: 'athlete' },
+    { field: 'athlete', filter: 'agTextColumnFilter' },
     {
       field: 'age',
+      filter: AgeFilterComponent,
       cellRendererSelector: (params: ICellRendererParams) => {
         if (params.data.age >= 25) {
           return {
@@ -58,30 +60,65 @@ export class AppComponent implements OnInit {
       }
     },
     { field: 'year' },
-    { field: 'date' },
+    {
+      field: 'date',
+      filter: 'agDateColumnFilter',
+      filterParams: {
+        comparator: (dateFromFilter: Date, cellValue: string) => {
+          const dateAsString = cellValue;
+          if (dateAsString == null) return -1
+          const dateParts = dateAsString.split('/');
+          const cellDate = new Date(
+            Number(dateParts[2]),
+            Number(dateParts[1]) - 1,
+            Number(dateParts[0])
+          );
+
+          if (dateFromFilter.getTime() === cellDate.getTime()) {
+            return 0
+          }
+
+          if (cellDate < dateFromFilter) {
+            return -1
+          }
+
+          if (cellDate > dateFromFilter) {
+            return 1
+          }
+          return undefined;
+        }
+      }
+    },
     { field: 'sport' },
     {
       field: 'gold',
+      filter: 'agNumberColumnFilter',
       cellClass: (params: CellClassParams) => params.data.gold > 0 ? 'medal-gold' : null
     },
     {
       field: 'silver',
+      filter: 'agNumberColumnFilter',
       cellClassRules: {
         'medal-silver': (params: CellClassParams) => params.data.silver > 0
       }
     },
     {
       field: 'bronze',
+      filter: 'agNumberColumnFilter',
       cellClassRules: {
         'medal-bronze': 'x > 0'
       }
     },
-    { field: 'total' }
+    {
+      field: 'total',
+      filter: 'agNumberColumnFilter',
+    }
   ];
 
   defaultColDef: ColDef = {
     sortable: true,
-    filter: true
+    filter: true,
+    floatingFilter: true
   }
 
   @ViewChild(AgGridAngular) agGrid!: AgGridAngular;
