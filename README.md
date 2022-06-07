@@ -35,12 +35,12 @@ Now only style the cells where medals have been won. There are a number of ways 
 ```ts
 {
       field: 'gold',
-      cellClass: (params: CellClassParams) => params.data.gold > 0 ? 'medal-gold' : null
+      cellClass: (params: CellClassParams) => params.value > 0 ? 'medal-gold' : null
     },
     {
       field: 'silver',
       cellClassRules: {
-        'medal-silver': (params: CellClassParams) => params.data.silver > 0
+        'medal-silver': (params: CellClassParams) => params.value > 0
       }
     },
     {
