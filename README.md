@@ -62,9 +62,9 @@ import { ColDef } from 'ag-grid-community';
 })
 export class AppComponent {
   public rowData = [
-    { "athlete": "Michael Phelps", "age": 23, "country": "United States", "year": 2008, "date": "24/08/2008", "sport": "Swimming", "gold": 8, "silver": 0, "bronze": 0, "total": 8 },
-    { "athlete": "Libby Lenton-Trickett", "age": 23, "country": "Australia", "year": 2008, "date": "24/08/2008", "sport": "Swimming", "gold": 2, "silver": 1, "bronze": 1, "total": 4 },
-    { "athlete": "Shawn Johnson", "age": 16, "country": "United States", "year": 2008, "date": "24/08/2008", "sport": "Gymnastics", "gold": 1, "silver": 3, "bronze": 0, "total": 4 }
+    { athlete: "Michael Phelps", age: 23, country: "United States", year: 2008, date: "24/08/2008", sport: "Swimming", gold: 8, silver: 0, bronze: 0, total: 8 },
+    { athlete: "Libby Lenton-Trickett", age: 23, country: "Australia", year: 2008, date: "24/08/2008", sport: "Swimming", gold: 2, silver: 1, bronze: 1, total: 4 },
+    { athlete: "Shawn Johnson", age: 16, country: "United States", year: 2008, date: "24/08/2008", sport: "Gymnastics", gold: 1, silver: 3, bronze: 0, total: 4 }
   ];
   public columnDefs: ColDef[] = [
     { field: 'athlete' },
